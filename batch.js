@@ -1,30 +1,36 @@
-// With new comment
 var FS = require('fs');
 
-var requestBatch = {};
-function readFile(filename, callback) {
-  if (requestBatch.hasOwnProperty(filename)) {
-    console.log("Existing batch found");
-    requestBatch[filename].push(callback);
+function onRead(err, file) {
+  if (err) throw err;
+}
+
+// A simple hash object to store the batches
+var requestBatches = {};
+function batchingReadFile(filename, callback) {
+
+  // Check if it's already in progress
+  if (requestBatches.hasOwnProperty(filename)) {
+    // Join the existing batch and return
+    requestBatches[filename].push(callback);
     return;
   }
-  var batch = requestBatch[filename] = [callback];
-  console.log("Calling FS.readFile");
+
+  // There is no existing batch, so start a new one
+  var batch = requestBatches[filename] = [callback];
+
+  // Kick off the real request
   FS.readFile(filename, 'utf8', function (err, contents) {
-    console.log("FS.readFile finished");
-    delete requestBatch[filename];
+
+    // Since we're done, we need to make sure new requests get their own batch
+    delete requestBatches[filename];
+
+    // Tell all interested parties the result
     for (var i = 0, l = batch.length; i < l; i++) {
       batch[i].apply(null, arguments);
     }
   });
 }
 
-console.log("Calling readFile 1st time");
-readFile(__filename, function (err, data) {
-  console.log("1st finished");
-});
-console.log("Calling readFile 2nd time");
-readFile(__filename, function (err, data) {
-  console.log("2nd finished");
-});
-console.log();
+for (var i = 0; i < 10000; i++) {
+  batchingReadFile(__filename, onRead);
+}

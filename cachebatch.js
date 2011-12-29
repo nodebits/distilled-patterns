@@ -1,46 +1,39 @@
 var FS = require('fs');
 
-var requestBatch = {};
+function onRead(err, file) {
+  if (err) throw err;
+}
+
+var requestBatches = {};
 var requestCache = {};
 function readFile(filename, callback) {
   if (requestCache.hasOwnProperty(filename)) {
-    console.log("Existing cache found");
     callback(null, requestCache[filename]);
     return;
   }
-  if (requestBatch.hasOwnProperty(filename)) {
-    console.log("Existing batch found");
-    requestBatch[filename].push(callback);
+  if (requestBatches.hasOwnProperty(filename)) {
+    requestBatches[filename].push(callback);
     return;
   }
-  var batch = requestBatch[filename] = [callback];
-  console.log("Calling FS.readFile");
+  var batch = requestBatches[filename] = [callback];
   FS.readFile(filename, 'utf8', function (err, contents) {
-    console.log("FS.readFile finished");
     if (!err) {
       requestCache[filename] = contents;
     }
-    delete requestBatch[filename];
+    delete requestBatches[filename];
     for (var i = 0, l = batch.length; i < l; i++) {
       batch[i].apply(null, arguments);
     }
   });
 }
 
-console.log("Calling readFile 1st time");
-readFile(__filename, function (err, data) {
-  console.log("1st finished");
-  console.log("Calling readFile 3rd time");
-  readFile(__filename, function (err, data) {
-    console.log("3nd finished");
-  });
-});
-console.log("Calling readFile 2nd time");
-readFile(__filename, function (err, data) {
-  console.log("2nd finished");
-  console.log("Calling readFile 4th time");
-  readFile(__filename, function (err, data) {
-    console.log("4th finished");
-  });
-});
-console.log();
+// Request the same resource 10,000 times concurrently 10,000 times serially
+var left = 10000;
+(function next(err) {
+  if (err) throw err;
+  if (left) return;
+  for (var i = 0; i < 10000; i++) {
+    readFile(__filename, onRead);
+  }
+  left--;
+})();

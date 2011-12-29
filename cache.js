@@ -1,28 +1,36 @@
 var FS = require('fs');
 
+function onRead(err, file) {
+  if (err) throw err;
+}
+
+// A simple hash object to store the cached results
 var requestCache = {};
-function readFile(filename, callback) {
+function cachingReadFile(filename, callback) {
+
+  // Check if this request is in the cache
   if (requestCache.hasOwnProperty(filename)) {
-    console.log("Existing cache found");
+    // If it is, return the value and we're done!
     callback(null, requestCache[filename]);
     return;
   }
-  console.log("Calling FS.readFile");
+
+  // Otherwise, start a real request
   FS.readFile(filename, 'utf8', function (err, contents) {
-    console.log("FS.readFile finished");
+    // If the result wasn't an error, remember the result
     if (!err) {
       requestCache[filename] = contents;
     }
+    // Forward the response (good or bad) to the caller.
     callback(err, contents);
   });
 }
 
-console.log("Calling readFile 1st time");
-readFile(__filename, function (err, data) {
-  console.log("1st finished");
-  console.log("Calling readFile 2nd time");
-  readFile(__filename, function (err, data) {
-    console.log("2nd finished");
-  });
-});
-console.log();
+// Request the same resource 10,000 times serially
+var left = 10000;
+(function next(err) {
+  if (err) throw err;
+  if (left) return;
+  cachingReadFile(__filename, next);
+  left--;
+})();
