@@ -1,3 +1,4 @@
+// With new comment
 var FS = require('fs');
 
 var requestBatch = {};
