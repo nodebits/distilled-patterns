@@ -1,16 +1,24 @@
 var FS = require('fs');
 
-var cacheLifetime = 100;
+// Caching wrapper around the real FS.readFile
 var requestCache = {};
-function readFile(filename, callback) {
+var cacheLifetime = 1000;
+function cachingReadFile(filename, callback) {
+  // First check for a cache hit
   if (requestCache.hasOwnProperty(filename)) {
-    console.log("Existing cache found");
-    callback(null, requestCache[filename]);
+    var value = requestCache[filename];
+    // Delay result till next tick to act async
+    process.nextTick(function () {
+      callback(null, value);
+    });
     return;
   }
-  console.log("Calling FS.readFile");
-  FS.readFile(filename, 'utf8', function (err, contents) {
-    console.log("FS.readFile finished");
+
+  // Otherwise start a real request
+  FS.readFile(filename, 'utf8', onRealRead);
+
+  // Cache the result if there is no error
+  function onRealRead(err, contents) {
     if (!err && cacheLifetime) {
       requestCache[filename] = contents;
       setTimeout(function () {
@@ -18,15 +26,12 @@ function readFile(filename, callback) {
       }, cacheLifetime);
     }
     callback(err, contents);
-  });
+  }
 }
 
-console.log("Calling readFile 1st time");
-readFile(__filename, function (err, data) {
-  console.log("1st finished");
-  console.log("Calling readFile 2nd time");
-  readFile(__filename, function (err, data) {
-    console.log("2nd finished");
-  });
-});
-console.log();
+// Request the same resource 10,000 times serially
+var left = 10000;
+(function next() {
+  if (!(left--)) return;
+  cachingReadFile(__filename, next);
+}());
