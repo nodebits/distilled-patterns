@@ -16,7 +16,7 @@ function batchingReadFile(filename, callback) {
 
   FS.readFile(filename, 'utf8', onRead);
   
-  function onRead(err, contents) {
+  function onRead() {
     delete requestBatches[filename];
     for (var i = 0, l = batch.length; i < l; i++) {
       batch[i].apply(null, arguments);
