@@ -1,5 +1,5 @@
 // A General wrapper with cache and batch and timeouts
-module.exports = function wrap(fn) {
+module.exports = function Wrap(fn) {
   var requestBatches = {};
   var requestCache = {};
   wrapped.cacheLifetime = 1000;
