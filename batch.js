@@ -11,7 +11,7 @@ function batchingReadFile(filename, callback) {
 
   // Otherwise start a new one and make a real request
   var batch = requestBatches[filename] = [callback];
-  FS.readFile(filename, 'utf8', onRealRead);
+  FS.readFile(filename, onRealRead);
   
   // Flush out the batch on complete
   function onRealRead() {

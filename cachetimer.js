@@ -15,7 +15,7 @@ function cachingReadFile(filename, callback) {
   }
 
   // Otherwise start a real request
-  FS.readFile(filename, 'utf8', onRealRead);
+  FS.readFile(filename, onRealRead);
 
   // Cache the result if there is no error
   function onRealRead(err, contents) {

@@ -21,7 +21,7 @@ function readFile(filename, callback) {
 
   // If there is neighter, create a new batch and request
   var batch = requestBatches[filename] = [callback];
-  FS.readFile(filename, 'utf8', onRealRead);
+  FS.readFile(filename, onRealRead);
 
   // Cache the result if there is no error and flush the batch
   function onRealRead(err, contents) {
